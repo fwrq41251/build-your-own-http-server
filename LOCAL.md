@@ -28,6 +28,33 @@ cd ~/git/build-your-own-http-server
 
 第一关的代码已经在 `src/main.zig` 里注释好了，取消注释即可。
 
+## macOS
+
+脚本本身跨平台，Mac 上只需要：
+
+1. 安装 **Zig 0.17**（版本必须匹配）：
+   ```bash
+   # 推荐用 mise（和 Linux 上一致）
+   mise use -g zig@0.17.0
+
+   # 或者用 Homebrew（确认装的是 0.17）
+   brew install zig
+   zig version
+   ```
+2. 克隆仓库后直接运行：
+   ```bash
+   git clone <your-repo-url> ~/git/build-your-own-http-server
+   cd ~/git/build-your-own-http-server
+   ./test.sh list
+   ```
+
+`test.sh` 只依赖 macOS 自带的 `bash`、`curl`、`awk`、`sed`、`tar`，不需要 `jq`、Python、PyYAML。它会根据 `uname` 自动下载对应的 tester：
+
+- Apple Silicon → `v59_darwin_arm64.tar.gz`
+- Intel Mac → `v59_darwin_amd64.tar.gz`
+
+`./test.sh show <slug>` 在没缓存课程仓库时会直接从 GitHub 读取说明，所以新机器上不用先 clone 课程仓库。`zig build` 和 `your_program.sh` 在 macOS 上同样可用。
+
 ## 关卡
 
 | # | Slug | 名称 | 分组 |
@@ -49,13 +76,13 @@ cd ~/git/build-your-own-http-server
 
 ## 课程资料在哪
 
-课程仓库缓存在：
+课程仓库可选地缓存在：
 
 ```bash
 ~/.cache/codecrafters/courses/build-your-own-http-server/
 ```
 
-里面有：
+没有这个缓存也能正常跑测试（`stages.tsv` 已经提交在仓库里），只是 `./test.sh show` 会改为从 GitHub 拉取说明。缓存里有：
 
 - `stage_descriptions/*.md` — 每一关的完整说明
 - `course-definition.yml` — 关卡顺序和元信息

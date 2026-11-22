@@ -33,21 +33,23 @@ stage_exists() {
 }
 
 show_stage() {
-  local slug=$1 file
-  for file in "$COURSE_DIR"/stage_descriptions/*-"$slug".md; do
-    if [[ -e "$file" ]]; then
-      cat "$file"
-      return
-    fi
-  done
-  echo "No description found for stage: $slug" >&2
-  echo "Course cache: $COURSE_DIR" >&2
-  exit 1
+  local slug=$1 path local_file
+  path=$(awk -F '\t' -v slug="$slug" '$1 == slug { print $4; found = 1 } END { exit !found }' "$STAGES_FILE") || {
+    echo "Unknown stage slug: $slug (try ./test.sh list)" >&2
+    exit 1
+  }
+  local_file="$COURSE_DIR/$path"
+  if [[ -f "$local_file" ]]; then
+    cat "$local_file"
+  else
+    # Fall back to GitHub if the course repo isn't cached locally.
+    curl -fsSL "https://raw.githubusercontent.com/codecrafters-io/build-your-own-http-server/main/$path"
+  fi
 }
 
 next_stage() {
   local slug
-  while IFS=$'\t' read -r slug _ _; do
+  while IFS=$'\t' read -r slug _ _ _; do
     if ! grep -qxF "$slug" "$PASSED_FILE" 2>/dev/null; then
       echo "$slug"
       return
@@ -69,7 +71,7 @@ case "$cmd" in
   list)
     echo "Stage  Slug  Name"
     echo "-----  ----  ----"
-    while IFS=$'\t' read -r slug name extension; do
+    while IFS=$'\t' read -r slug name extension _; do
       mark=" "
       grep -qxF "$slug" "$PASSED_FILE" 2>/dev/null && mark="x"
       printf '[%s] %-4s %-38s (%s)\n' "$mark" "$slug" "$name" "$extension"
