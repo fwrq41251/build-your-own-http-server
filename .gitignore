@@ -16,3 +16,6 @@ bin/
 **/.DS_Store
 *.swp
 *~
+
+# Local progress tracker
+.cc-passed

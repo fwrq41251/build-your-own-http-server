@@ -14,6 +14,12 @@ and more.
 **Note**: If you're viewing this repo on GitHub, head over to
 [codecrafters.io](https://codecrafters.io) to try the challenge.
 
+# Local setup
+
+This starter is already configured for local testing, without logging in to
+codecrafters.io. See [LOCAL.md](LOCAL.md) for the workflow (`./test.sh`), the
+stage list and where the course material is cached.
+
 # Passing the first stage
 
 The entry point for your HTTP server implementation is in `src/main.zig`. Study
