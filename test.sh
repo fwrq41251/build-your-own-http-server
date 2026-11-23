@@ -9,6 +9,7 @@
 #   ./test.sh show at4     # render a stage's instructions
 #   ./test.sh show at4 --raw    # print the original Markdown
 #   ./test.sh show at4 --tests  # include hidden test notes
+#   ./test.sh docs         # regenerate the GitHub-friendly docs/stages/ pages
 #
 # Stage descriptions are rendered with glow when available, falling back to
 # bat and then plain text. CC_RENDERER=auto|glow|bat|plain forces a choice.
@@ -58,13 +59,26 @@ stage_source() {
 # Strip the Handlebars markers (keeping their content) and, unless requested,
 # the hidden test notes in HTML comments. Also fix ```javascript fences that
 # actually contain HTTP messages.
+#
+# Language-specific blocks ({{#lang_is_javascript}} ...) are kept only for Zig;
+# other languages' notes are dropped since this repo is a Zig solution.
 preprocess_markdown() {
   local show_tests=$1
   awk -v show_tests="$show_tests" '
-    BEGIN { in_bot = 0; in_comment = 0 }
+    BEGIN { in_bot = 0; in_comment = 0; in_lang = 0 }
     /^[[:space:]]*\{\{#reader_is_bot\}\}[[:space:]]*$/ { in_bot = 1; next }
     /^[[:space:]]*\{\{\/reader_is_bot\}\}[[:space:]]*$/ { in_bot = 0; next }
     in_bot { print; next }
+    /^[[:space:]]*\{\{[#\/]lang_is_[a-z0-9_]+\}\}[[:space:]]*$/ {
+      tag = $0
+      sub(/^[[:space:]]*\{\{[#\/]/, "", tag)
+      sub(/\}\}[[:space:]]*$/, "", tag)
+      if ($0 ~ /\{\{#/) in_lang = (tag == "lang_is_zig") ? 1 : 2
+      else in_lang = 0
+      next
+    }
+    in_lang == 1 { print; next }
+    in_lang == 2 { next }
     {
       if (show_tests == "0") {
         if (in_comment) {
@@ -83,6 +97,8 @@ preprocess_markdown() {
         print "```text"
         next
       }
+      # Never leak an unknown template tag into the output.
+      if ($0 ~ /^[[:space:]]*\{\{.*\}\}[[:space:]]*$/) next
       print
     }
   '
@@ -146,6 +162,75 @@ show_stage() {
   } | render_markdown
 }
 
+# Generate GitHub-friendly Markdown for every stage under docs/stages/.
+# GitHub renders these files itself, so the stage descriptions can be read
+# from the repository's web UI without running any command.
+write_docs() {
+  local out_dir=${1:-"$PROJECT_DIR/docs/stages"}
+  local slugs=() names=() groups=() paths=()
+  local slug name group path number total idx prev next
+
+  while IFS=$'\t' read -r slug name group path; do
+    slugs+=("$slug")
+    names+=("$name")
+    groups+=("$group")
+    paths+=("$path")
+  done < "$STAGES_FILE"
+
+  total=${#slugs[@]}
+  mkdir -p "$out_dir"
+
+  {
+    printf '# 关卡说明\n\n'
+    printf '「Build your own HTTP server」全部 %d 关的说明，从课程仓库生成，方便在 GitHub 网页上直接阅读。\n\n' "$total"
+    printf '终端里仍然可以用 `./test.sh show <slug>` 查看，内容与此处一致。\n\n'
+    printf '> 内容来自 [codecrafters-io/build-your-own-http-server](https://github.com/codecrafters-io/build-your-own-http-server)（MIT License）。\n'
+    printf '> 已去掉模板标记、隐藏测试注释，并把 HTTP 报文代码块改为纯文本。\n\n'
+    printf '| # | 关卡 | Slug | 分组 |\n'
+    printf '|---:|---|---|---|\n'
+    number=0
+    while [[ $number -lt $total ]]; do
+      number=$((number + 1))
+      idx=$((number - 1))
+      printf '| %d | [%s](%02d-%s.md) | `%s` | %s |\n' \
+        "$number" "${names[$idx]}" "$number" "${slugs[$idx]}" "${slugs[$idx]}" "${groups[$idx]}"
+    done
+  } > "$out_dir/README.md"
+
+  number=0
+  while [[ $number -lt $total ]]; do
+    number=$((number + 1))
+    idx=$((number - 1))
+    prev=""
+    next=""
+    if [[ $number -gt 1 ]]; then
+      prev=$(printf '%02d-%s.md' "$((number - 1))" "${slugs[$((number - 2))]}")
+    fi
+    if [[ $number -lt $total ]]; then
+      next=$(printf '%02d-%s.md' "$((number + 1))" "${slugs[$number]}")
+    fi
+
+    {
+      printf '# Stage #%d: %s\n\n' "$number" "${names[$idx]}"
+      printf '`%s` · %s · %d/%d\n\n' "${slugs[$idx]}" "${groups[$idx]}" "$number" "$total"
+      printf '[目录](README.md)'
+      [[ -n "$prev" ]] && printf ' · [← 上一关](%s)' "$prev"
+      [[ -n "$next" ]] && printf ' · [下一关 →](%s)' "$next"
+      printf '\n\n---\n\n'
+      stage_source "${paths[$idx]}" | preprocess_markdown 0
+      printf '\n---\n\n'
+      printf '[目录](README.md)'
+      [[ -n "$prev" ]] && printf ' · [← 上一关](%s)' "$prev"
+      [[ -n "$next" ]] && printf ' · [下一关 →](%s)' "$next"
+      printf '\n'
+    } > "$out_dir/$(printf '%02d-%s.md' "$number" "${slugs[$idx]}")"
+
+    printf '  %02d-%s.md\n' "$number" "${slugs[$idx]}"
+  done
+
+  printf 'Generated %d stage pages in %s\n' "$total" "$out_dir"
+}
+
 next_stage() {
   local slug
   while IFS=$'\t' read -r slug _ _ _; do
@@ -175,6 +260,10 @@ case "$cmd" in
       grep -qxF "$slug" "$PASSED_FILE" 2>/dev/null && mark="x"
       printf '[%s] %-4s %-38s (%s)\n' "$mark" "$slug" "$name" "$extension"
     done < "$STAGES_FILE"
+    exit 0
+    ;;
+  docs)
+    write_docs
     exit 0
     ;;
   show)

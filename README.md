@@ -20,6 +20,10 @@ This starter is already configured for local testing, without logging in to
 codecrafters.io. See [LOCAL.md](LOCAL.md) for the workflow (`./test.sh`), the
 stage list and where the course material is cached.
 
+Prefer reading in a browser? All 14 stage descriptions are committed under
+[docs/stages](docs/stages/README.md) and rendered by GitHub. Regenerate them
+with `./test.sh docs` after the course material changes.
+
 # Passing the first stage
 
 The entry point for your HTTP server implementation is in `src/main.zig`. Study

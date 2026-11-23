@@ -42,6 +42,25 @@ CC_RENDERER=glow  ./test.sh show at4
 
 `glow` 和 `bat` 都是可选的：Linux 上 `pacman -S glow bat`，macOS 上 `brew install glow bat`。不装也能正常阅读，只是没有颜色和排版。
 
+## 在 GitHub 网页上看
+
+仓库里的 [`docs/stages/`](docs/stages/README.md) 有全部 14 关的说明，GitHub 会自动渲染 Markdown，手机浏览器也能看：
+
+- `docs/stages/README.md` — 目录，包含 14 关的表格
+- `docs/stages/01-at4.md` … `14-kh7.md` — 每关一页，带「上一关 / 目录 / 下一关」导航
+- 和终端一样去掉了模板标记、隐藏了 HTML 注释里的测试细节，HTTP 报文代码块用纯文本显示
+
+这些文件由 `./test.sh docs` 从本地课程缓存（没有缓存时从 GitHub）生成，重复执行结果一致。课程更新后重新生成并提交：
+
+```bash
+./test.sh docs
+git add docs/stages
+git commit -m "Update stage docs"
+git push
+```
+
+生成的页面已经提交进仓库，所以平时在 GitHub 上看不需要跑任何命令。
+
 ## 写代码
 
 入口是 `src/main.zig`，改完后直接：
