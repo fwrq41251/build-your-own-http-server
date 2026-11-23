@@ -16,6 +16,32 @@ cd ~/git/build-your-own-http-server
 
 通过后关卡会记录在 `.cc-passed` 里，`./test.sh list` 会打上 `[x]`。
 
+## 阅读关卡说明
+
+```bash
+./test.sh show             # 不给 slug 时显示下一关
+./test.sh show at4         # 渲染后显示
+./test.sh show at4 --raw   # 原始 Markdown，和课程仓库完全一致
+./test.sh show at4 --tests # 额外显示隐藏的测试说明（剧透）
+```
+
+渲染前会自动：
+
+- 在顶部加上 `Stage #N: Name` 标题和进度信息；
+- 去掉 `{{#reader_is_bot}}` 模板标记，但保留里面的内容；
+- 隐藏 HTML 注释里的测试细节（`--tests` 可展开）；
+- 把标成 `javascript`、实际装的是 HTTP 报文的代码块改成纯文本。
+
+渲染器按 `glow` → `bat` → `cat` 自动回退，也可以手动指定：
+
+```bash
+CC_RENDERER=plain ./test.sh show at4   # 纯文本
+CC_RENDERER=bat   ./test.sh show at4
+CC_RENDERER=glow  ./test.sh show at4
+```
+
+`glow` 和 `bat` 都是可选的：Linux 上 `pacman -S glow bat`，macOS 上 `brew install glow bat`。不装也能正常阅读，只是没有颜色和排版。
+
 ## 写代码
 
 入口是 `src/main.zig`，改完后直接：
@@ -48,7 +74,7 @@ cd ~/git/build-your-own-http-server
    ./test.sh list
    ```
 
-`test.sh` 只依赖 macOS 自带的 `bash`、`curl`、`awk`、`sed`、`tar`，不需要 `jq`、Python、PyYAML。它会根据 `uname` 自动下载对应的 tester：
+`test.sh` 只依赖 macOS 自带的 `bash`、`curl`、`awk`、`sed`、`tar`，不需要 `jq`、Python、PyYAML。`glow` / `bat` 只是可选的渲染器，不装也能用。它会根据 `uname` 自动下载对应的 tester：
 
 - Apple Silicon → `v59_darwin_arm64.tar.gz`
 - Intel Mac → `v59_darwin_amd64.tar.gz`

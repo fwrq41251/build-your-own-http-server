@@ -6,10 +6,16 @@
 #   ./test.sh at4          # run one specific stage
 #   ./test.sh at4 ia4      # run several stages in order
 #   ./test.sh list         # list all stages and progress
-#   ./test.sh show at4     # print a stage's instructions
+#   ./test.sh show at4     # render a stage's instructions
+#   ./test.sh show at4 --raw    # print the original Markdown
+#   ./test.sh show at4 --tests  # include hidden test notes
+#
+# Stage descriptions are rendered with glow when available, falling back to
+# bat and then plain text. CC_RENDERER=auto|glow|bat|plain forces a choice.
 #
 # Progress is tracked in .cc-passed (one stage slug per line).
 # Requires: bash, curl, awk, sed, tar. Works on Linux and macOS.
+# Optional: glow or bat for prettier stage descriptions.
 set -euo pipefail
 
 PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -24,6 +30,8 @@ if [[ ! -f "$STAGES_FILE" ]]; then
   exit 1
 fi
 
+TOTAL_STAGES=$(awk 'END { print NR }' "$STAGES_FILE")
+
 stage_name() {
   awk -F '\t' -v slug="$1" '$1 == slug { print $2; found = 1 } END { exit !found }' "$STAGES_FILE"
 }
@@ -32,12 +40,12 @@ stage_exists() {
   awk -F '\t' -v slug="$1" '$1 == slug { found = 1 } END { exit !found }' "$STAGES_FILE"
 }
 
-show_stage() {
-  local slug=$1 path local_file
-  path=$(awk -F '\t' -v slug="$slug" '$1 == slug { print $4; found = 1 } END { exit !found }' "$STAGES_FILE") || {
-    echo "Unknown stage slug: $slug (try ./test.sh list)" >&2
-    exit 1
-  }
+stage_info() {
+  awk -F '\t' -v slug="$1" '$1 == slug { print NR "\t" $2 "\t" $3 "\t" $4; found = 1 } END { exit !found }' "$STAGES_FILE"
+}
+
+stage_source() {
+  local path=$1 local_file
   local_file="$COURSE_DIR/$path"
   if [[ -f "$local_file" ]]; then
     cat "$local_file"
@@ -45,6 +53,97 @@ show_stage() {
     # Fall back to GitHub if the course repo isn't cached locally.
     curl -fsSL "https://raw.githubusercontent.com/codecrafters-io/build-your-own-http-server/main/$path"
   fi
+}
+
+# Strip the Handlebars markers (keeping their content) and, unless requested,
+# the hidden test notes in HTML comments. Also fix ```javascript fences that
+# actually contain HTTP messages.
+preprocess_markdown() {
+  local show_tests=$1
+  awk -v show_tests="$show_tests" '
+    BEGIN { in_bot = 0; in_comment = 0 }
+    /^[[:space:]]*\{\{#reader_is_bot\}\}[[:space:]]*$/ { in_bot = 1; next }
+    /^[[:space:]]*\{\{\/reader_is_bot\}\}[[:space:]]*$/ { in_bot = 0; next }
+    in_bot { print; next }
+    {
+      if (show_tests == "0") {
+        if (in_comment) {
+          if ($0 ~ /-->/) in_comment = 0
+          next
+        }
+        if ($0 ~ /<!--/) {
+          if ($0 !~ /-->/) in_comment = 1
+          next
+        }
+      } else {
+        sub(/<!--/, "")
+        sub(/-->/, "")
+      }
+      if ($0 ~ /^```(javascript|js)[[:space:]]*$/) {
+        print "```text"
+        next
+      }
+      print
+    }
+  '
+}
+
+render_markdown() {
+  local renderer=${CC_RENDERER:-auto}
+  case "$renderer" in
+    glow)
+      if [[ -t 1 ]]; then glow -; else glow -s notty -; fi
+      ;;
+    bat)
+      bat --language=md --style=plain --paging=never
+      ;;
+    plain)
+      cat
+      ;;
+    auto)
+      if command -v glow >/dev/null 2>&1; then
+        if [[ -t 1 ]]; then glow -; else glow -s notty -; fi
+      elif command -v bat >/dev/null 2>&1; then
+        bat --language=md --style=plain --paging=never
+      else
+        cat
+      fi
+      ;;
+    *)
+      echo "Unknown CC_RENDERER: $renderer (use auto|glow|bat|plain)" >&2
+      exit 1
+      ;;
+  esac
+}
+
+show_stage() {
+  local slug=$1 raw=$2 show_tests=$3
+  local info number name extension path passed
+  info=$(stage_info "$slug") || {
+    echo "Unknown stage slug: $slug (try ./test.sh list)" >&2
+    exit 1
+  }
+  IFS=$'\t' read -r number name extension path <<< "$info"
+
+  if [[ $raw == "1" ]]; then
+    stage_source "$path"
+    return
+  fi
+
+  passed=""
+  if grep -qxF "$slug" "$PASSED_FILE" 2>/dev/null; then
+    passed=" · passed"
+  fi
+
+  {
+    printf '# Stage #%s: %s\n\n' "$number" "$name"
+    printf '> `%s` · %s · %s/%s%s\n\n---\n\n' "$slug" "$extension" "$number" "$TOTAL_STAGES" "$passed"
+    if [[ $show_tests == "1" ]]; then
+      printf '> **Contains hidden test notes (spoilers)**\n\n'
+    fi
+    stage_source "$path" | preprocess_markdown "$show_tests"
+    printf '\n'
+  } | render_markdown
 }
 
 next_stage() {
@@ -79,8 +178,35 @@ case "$cmd" in
     exit 0
     ;;
   show)
-    [[ $# -eq 2 ]] || { echo "Usage: $0 show <stage-slug>" >&2; exit 1; }
-    show_stage "$2"
+    shift
+    slug=""
+    raw=0
+    show_tests=0
+    for arg in "$@"; do
+      case "$arg" in
+        --raw) raw=1 ;;
+        --tests) show_tests=1 ;;
+        --*)
+          echo "Unknown option: $arg" >&2
+          exit 1
+          ;;
+        *)
+          if [[ -n "$slug" ]]; then
+            echo "Only one stage slug is allowed for show" >&2
+            exit 1
+          fi
+          slug=$arg
+          ;;
+      esac
+    done
+    if [[ -z "$slug" ]]; then
+      slug=$(next_stage)
+      if [[ -z "$slug" ]]; then
+        echo "All stages passed. Nice work!"
+        exit 0
+      fi
+    fi
+    show_stage "$slug" "$raw" "$show_tests"
     exit 0
     ;;
   next)
