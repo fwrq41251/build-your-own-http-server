@@ -181,12 +181,12 @@ write_docs() {
   mkdir -p "$out_dir"
 
   {
-    printf '# 关卡说明\n\n'
-    printf '「Build your own HTTP server」全部 %d 关的说明，从课程仓库生成，方便在 GitHub 网页上直接阅读。\n\n' "$total"
-    printf '终端里仍然可以用 `./test.sh show <slug>` 查看，内容与此处一致。\n\n'
-    printf '> 内容来自 [codecrafters-io/build-your-own-http-server](https://github.com/codecrafters-io/build-your-own-http-server)（MIT License）。\n'
-    printf '> 已去掉模板标记、隐藏测试注释，并把 HTTP 报文代码块改为纯文本。\n\n'
-    printf '| # | 关卡 | Slug | 分组 |\n'
+    printf '# Stage Guide\n\n'
+    printf 'All %d stages of "Build your own HTTP server", generated from the course repository so they can be read directly on GitHub.\n\n' "$total"
+    printf 'The same content is available in the terminal via `./test.sh show <slug>`.\n\n'
+    printf '> Stage descriptions come from [codecrafters-io/build-your-own-http-server](https://github.com/codecrafters-io/build-your-own-http-server) (MIT License).\n'
+    printf '> Template markers are removed, hidden test notes are omitted, and HTTP message blocks are labelled as plain text.\n\n'
+    printf '| # | Stage | Slug | Group |\n'
     printf '|---:|---|---|---|\n'
     number=0
     while [[ $number -lt $total ]]; do
@@ -213,15 +213,15 @@ write_docs() {
     {
       printf '# Stage #%d: %s\n\n' "$number" "${names[$idx]}"
       printf '`%s` · %s · %d/%d\n\n' "${slugs[$idx]}" "${groups[$idx]}" "$number" "$total"
-      printf '[目录](README.md)'
-      [[ -n "$prev" ]] && printf ' · [← 上一关](%s)' "$prev"
-      [[ -n "$next" ]] && printf ' · [下一关 →](%s)' "$next"
+      printf '[Index](README.md)'
+      [[ -n "$prev" ]] && printf ' · [← Previous](%s)' "$prev"
+      [[ -n "$next" ]] && printf ' · [Next →](%s)' "$next"
       printf '\n\n---\n\n'
       stage_source "${paths[$idx]}" | preprocess_markdown 0
       printf '\n---\n\n'
-      printf '[目录](README.md)'
-      [[ -n "$prev" ]] && printf ' · [← 上一关](%s)' "$prev"
-      [[ -n "$next" ]] && printf ' · [下一关 →](%s)' "$next"
+      printf '[Index](README.md)'
+      [[ -n "$prev" ]] && printf ' · [← Previous](%s)' "$prev"
+      [[ -n "$next" ]] && printf ' · [Next →](%s)' "$next"
       printf '\n'
     } > "$out_dir/$(printf '%02d-%s.md' "$number" "${slugs[$idx]}")"
 

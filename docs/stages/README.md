@@ -1,13 +1,13 @@
-# 关卡说明
+# Stage Guide
 
-「Build your own HTTP server」全部 14 关的说明，从课程仓库生成，方便在 GitHub 网页上直接阅读。
+All 14 stages of "Build your own HTTP server", generated from the course repository so they can be read directly on GitHub.
 
-终端里仍然可以用 `./test.sh show <slug>` 查看，内容与此处一致。
+The same content is available in the terminal via `./test.sh show <slug>`.
 
-> 内容来自 [codecrafters-io/build-your-own-http-server](https://github.com/codecrafters-io/build-your-own-http-server)（MIT License）。
-> 已去掉模板标记、隐藏测试注释，并把 HTTP 报文代码块改为纯文本。
+> Stage descriptions come from [codecrafters-io/build-your-own-http-server](https://github.com/codecrafters-io/build-your-own-http-server) (MIT License).
+> Template markers are removed, hidden test notes are omitted, and HTTP message blocks are labelled as plain text.
 
-| # | 关卡 | Slug | 分组 |
+| # | Stage | Slug | Group |
 |---:|---|---|---|
 | 1 | [Bind to a port](01-at4.md) | `at4` | base |
 | 2 | [Respond with 200](02-ia4.md) | `ia4` | base |
