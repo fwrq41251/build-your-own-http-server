@@ -1,56 +1,56 @@
-# 本地 CodeCrafters 环境
+# Local CodeCrafters Setup
 
-这个目录是 CodeCrafters **Build your own HTTP server** 的 Zig starter，已经配置好本地测试，不需要登录 codecrafters.io。
+This directory is the Zig starter for CodeCrafters **Build your own HTTP server**, already configured for local testing without logging in to codecrafters.io.
 
-## 快速开始
+## Quick start
 
 ```bash
 cd ~/git/build-your-own-http-server
 
-./test.sh list          # 查看所有关卡和进度
-./test.sh show at4      # 阅读某一关的说明
-./test.sh               # 跑下一关（自动选第一个未通过的）
-./test.sh at4           # 只跑指定关卡
-./test.sh at4 ia4 ih0   # 按顺序跑多关
+./test.sh list          # list all stages and progress
+./test.sh show at4      # read a stage's instructions
+./test.sh               # run the next stage (first one not yet passed)
+./test.sh at4           # run one specific stage
+./test.sh at4 ia4 ih0   # run several stages in order
 ```
 
-通过后关卡会记录在 `.cc-passed` 里，`./test.sh list` 会打上 `[x]`。
+Passed stages are recorded in `.cc-passed`; `./test.sh list` marks them with `[x]`.
 
-## 阅读关卡说明
+## Reading stage descriptions
 
 ```bash
-./test.sh show             # 不给 slug 时显示下一关
-./test.sh show at4         # 渲染后显示
-./test.sh show at4 --raw   # 原始 Markdown，和课程仓库完全一致
-./test.sh show at4 --tests # 额外显示隐藏的测试说明（剧透）
+./test.sh show             # show the next stage when no slug is given
+./test.sh show at4         # render a stage
+./test.sh show at4 --raw   # original Markdown, identical to the course repo
+./test.sh show at4 --tests # also show the hidden test notes (spoilers)
 ```
 
-渲染前会自动：
+Before rendering, it automatically:
 
-- 在顶部加上 `Stage #N: Name` 标题和进度信息；
-- 去掉 `{{#reader_is_bot}}` 模板标记，但保留里面的内容；
-- 隐藏 HTML 注释里的测试细节（`--tests` 可展开）；
-- 把标成 `javascript`、实际装的是 HTTP 报文的代码块改成纯文本。
+- adds a `Stage #N: Name` heading and progress line at the top;
+- strips the `{{#reader_is_bot}}` template markers but keeps their content;
+- hides the test details in HTML comments (`--tests` reveals them);
+- turns code blocks labelled `javascript` that actually contain HTTP messages into plain text.
 
-渲染器按 `glow` → `bat` → `cat` 自动回退，也可以手动指定：
+Rendering falls back from `glow` to `bat` to `cat`, and you can force one:
 
 ```bash
-CC_RENDERER=plain ./test.sh show at4   # 纯文本
+CC_RENDERER=plain ./test.sh show at4   # plain text
 CC_RENDERER=bat   ./test.sh show at4
 CC_RENDERER=glow  ./test.sh show at4
 ```
 
-`glow` 和 `bat` 都是可选的：Linux 上 `pacman -S glow bat`，macOS 上 `brew install glow bat`。不装也能正常阅读，只是没有颜色和排版。
+`glow` and `bat` are optional: `pacman -S glow bat` on Linux, `brew install glow bat` on macOS. Everything still works without them, just without colour or formatting.
 
-## 在 GitHub 网页上看
+## Reading on GitHub
 
-仓库里的 [`docs/stages/`](docs/stages/README.md) 有全部 14 关的说明，GitHub 会自动渲染 Markdown，手机浏览器也能看：
+[`docs/stages/`](docs/stages/README.md) contains all 14 stage descriptions, and GitHub renders the Markdown automatically, including on a phone:
 
-- `docs/stages/README.md` — 目录，包含 14 关的表格
-- `docs/stages/01-at4.md` … `14-kh7.md` — 每关一页，带「上一关 / 目录 / 下一关」导航
-- 和终端一样去掉了模板标记、隐藏了 HTML 注释里的测试细节，HTTP 报文代码块用纯文本显示
+- `docs/stages/README.md` — index with a table of all 14 stages
+- `docs/stages/01-at4.md` … `14-kh7.md` — one page per stage with Index / Previous / Next navigation
+- like the terminal output, template markers are removed, hidden HTML comments stay hidden, and HTTP message blocks are shown as plain text
 
-这些文件由 `./test.sh docs` 从本地课程缓存（没有缓存时从 GitHub）生成，重复执行结果一致。课程更新后重新生成并提交：
+`./test.sh docs` generates these files from the local course cache (or from GitHub when there is no cache), and repeated runs produce identical output. After the course material changes, regenerate and commit:
 
 ```bash
 ./test.sh docs
@@ -59,50 +59,50 @@ git commit -m "Update stage docs"
 git push
 ```
 
-生成的页面已经提交进仓库，所以平时在 GitHub 上看不需要跑任何命令。
+The generated pages are committed, so browsing them on GitHub requires no commands.
 
-## 写代码
+## Writing code
 
-入口是 `src/main.zig`，改完后直接：
+The entry point is `src/main.zig`. After editing, run:
 
 ```bash
-./your_program.sh       # 本地编译并运行，监听 4221
+./your_program.sh       # build and run locally, listening on 4221
 ```
 
-`your_program.sh` 每次会先执行 `zig build`，然后运行 `zig-out/bin/main`。Zig 版本是 **0.17.0**，与 `codecrafters.yml` 里的 `buildpack: zig-0.17` 一致。
+`your_program.sh` runs `zig build` first and then executes `zig-out/bin/main`. The Zig version is **0.17.0**, matching `buildpack: zig-0.17` in `codecrafters.yml`.
 
-第一关的代码已经在 `src/main.zig` 里注释好了，取消注释即可。
+The first stage's code is already in `src/main.zig` as comments; just uncomment it.
 
 ## macOS
 
-脚本本身跨平台，Mac 上只需要：
+The scripts are cross-platform. On a Mac you only need to:
 
-1. 安装 **Zig 0.17**（版本必须匹配）：
+1. Install **Zig 0.17** (the version must match):
    ```bash
-   # 推荐用 mise（和 Linux 上一致）
+   # Recommended: mise (same as on Linux)
    mise use -g zig@0.17.0
 
-   # 或者用 Homebrew（确认装的是 0.17）
+   # Or Homebrew (make sure it installs 0.17)
    brew install zig
    zig version
    ```
-2. 克隆仓库后直接运行：
+2. Clone the repository and run:
    ```bash
    git clone <your-repo-url> ~/git/build-your-own-http-server
    cd ~/git/build-your-own-http-server
    ./test.sh list
    ```
 
-`test.sh` 只依赖 macOS 自带的 `bash`、`curl`、`awk`、`sed`、`tar`，不需要 `jq`、Python、PyYAML。`glow` / `bat` 只是可选的渲染器，不装也能用。它会根据 `uname` 自动下载对应的 tester：
+`test.sh` only needs the `bash`, `curl`, `awk`, `sed` and `tar` that ship with macOS; no `jq`, Python or PyYAML. `glow` / `bat` are optional renderers. It picks the tester for your platform based on `uname`:
 
 - Apple Silicon → `v59_darwin_arm64.tar.gz`
 - Intel Mac → `v59_darwin_amd64.tar.gz`
 
-`./test.sh show <slug>` 在没缓存课程仓库时会直接从 GitHub 读取说明，所以新机器上不用先 clone 课程仓库。`zig build` 和 `your_program.sh` 在 macOS 上同样可用。
+When the course repository isn't cached, `./test.sh show <slug>` reads the descriptions straight from GitHub, so a fresh machine doesn't need to clone the course repo first. `zig build` and `your_program.sh` work the same way on macOS.
 
-## 关卡
+## Stages
 
-| # | Slug | 名称 | 分组 |
+| # | Slug | Name | Group |
 |---:|---|---|---|
 | 1 | `at4` | Bind to a port | base |
 | 2 | `ia4` | Respond with 200 | base |
@@ -119,22 +119,22 @@ git push
 | 13 | `ul1` | Concurrent persistent connections | Persistent Connections |
 | 14 | `kh7` | Connection closure | Persistent Connections |
 
-## 课程资料在哪
+## Where the course material lives
 
-课程仓库可选地缓存在：
+The course repository is optionally cached at:
 
 ```bash
 ~/.cache/codecrafters/courses/build-your-own-http-server/
 ```
 
-没有这个缓存也能正常跑测试（`stages.tsv` 已经提交在仓库里），只是 `./test.sh show` 会改为从 GitHub 拉取说明。缓存里有：
+Tests work without this cache (`stages.tsv` is committed), but `./test.sh show` will fetch descriptions from GitHub instead. The cache contains:
 
-- `stage_descriptions/*.md` — 每一关的完整说明
-- `course-definition.yml` — 关卡顺序和元信息
-- `solutions/zig/` — 官方 Zig 参考实现（剧透，建议做完再看）
-- `compiled_starters/zig/` — 原始 starter
+- `stage_descriptions/*.md` — the full description of every stage
+- `course-definition.yml` — stage order and metadata
+- `solutions/zig/` — official Zig reference implementation (spoilers; save it for after you finish)
+- `compiled_starters/zig/` — the original starter
 
-也可以直接：
+You can also browse it directly:
 
 ```bash
 cd ~/.cache/codecrafters/courses/build-your-own-http-server
@@ -142,18 +142,18 @@ cat stage_descriptions/*-at4.md
 ls solutions/zig
 ```
 
-tester 缓存在 `~/.cache/codecrafters/testers/http-server/`。
+The tester is cached under `~/.cache/codecrafters/testers/http-server/`.
 
-## 更新课程 / tester
+## Updating the course / tester
 
 ```bash
 git -C ~/.cache/codecrafters/courses/build-your-own-http-server pull --ff-only
 ```
 
-`./test.sh` 会自动查询并下载最新的 http-server tester（第一次运行需要联网）。
+`./test.sh` looks up and downloads the latest http-server tester automatically (the first run needs network access).
 
-## 说明
+## Notes
 
-- 默认跳过 anti-cheat 检查；想跑的话用 `CC_RUN_ANTI_CHEAT=1 ./test.sh`。
-- 这是纯本地学习环境，不会向 CodeCrafters 提交成绩。
-- 如果以后想接回官方 CLI，在 GitHub 上创建一个空仓库，然后 `git remote add origin <url>` 并 push 即可。
+- Anti-cheat checks are skipped by default; run them with `CC_RUN_ANTI_CHEAT=1 ./test.sh`.
+- This is a purely local learning setup; results are never submitted to CodeCrafters.
+- To hook the official CLI back up later, create an empty repository on GitHub, then `git remote add origin <url>` and push.
