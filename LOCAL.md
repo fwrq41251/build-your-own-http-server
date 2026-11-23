@@ -71,6 +71,16 @@ The entry point is `src/main.zig`. After editing, run:
 
 `your_program.sh` runs `zig build` first and then executes `zig-out/bin/main`. The Zig version is **0.17.0**, matching `buildpack: zig-0.17` in `codecrafters.yml`.
 
+### Editor support
+
+`mise.toml` pins `zls 0.17.0`, the Zig language server used by editors such as Zed. After cloning, install it with:
+
+```bash
+mise install
+```
+
+Zed's Zig extension looks up `zls` on `PATH`, so the mise shims must be on your `PATH`. If Zed was already open when `zls` was installed, restart the language server from the command palette (`editor: restart language server`) or reopen the project.
+
 The first stage's code is already in `src/main.zig` as comments; just uncomment it.
 
 ## macOS
