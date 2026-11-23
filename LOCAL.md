@@ -81,6 +81,8 @@ mise install
 
 Zed's Zig extension looks up `zls` on `PATH`, so the mise shims must be on your `PATH`. If Zed was already open when `zls` was installed, restart the language server from the command palette (`editor: restart language server`) or reopen the project.
 
+`build.zig` also defines a `check` step. ZLS detects it automatically and runs `zig build check` whenever you save a file, so compiler errors show up as diagnostics without running the program. This is still not a full build: ZLS is a best-effort analyzer, and `zig build` remains the source of truth for linker and build-script errors.
+
 The first stage's code is already in `src/main.zig` as comments; just uncomment it.
 
 ## macOS
